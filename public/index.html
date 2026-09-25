@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP Compatibility Check</title>
+<meta name="description" content="Free check: will Claude, Cursor and ChatGPT connect to your MCP server? Protocol version, OAuth sign-in and tool schemas, explained in plain language.">
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #e3e3de;
+    --accent: #1f5fd6; --accent-text: #ffffff; --fail: #b3261e; --warn: #9a6700; --pass: #1a7f37; --info: #5f5f5a;
+    --fail-bg: #fdecea; --warn-bg: #fff6db; --pass-bg: #e9f6ec; --info-bg: #f0f0ed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --panel: #1e1e1c; --text: #ededea; --muted: #a8a8a2; --line: #33332f;
+      --accent: #6b9bff; --accent-text: #0d0d0c; --fail: #ff8a80; --warn: #f2c14e; --pass: #6fd08c; --info: #a8a8a2;
+      --fail-bg: #3a1f1c; --warn-bg: #3a3118; --pass-bg: #1b3323; --info-bg: #262624;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.25rem; margin: 36px 0 12px; }
+  p { margin: 0 0 12px; }
+  .lead { color: var(--muted); font-size: 1.08rem; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 20px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  input[type=url], input[type=email], input[type=text], textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0; font-weight: 400; }
+  .check input { margin-top: 4px; }
+  button { background: var(--accent); color: var(--accent-text); border: 0; border-radius: 8px; padding: 12px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .small { font-size: .9rem; color: var(--muted); }
+  .error { color: var(--fail); margin-top: 12px; }
+  .verdict { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 8px; word-break: break-all; }
+  .item { border-radius: 10px; padding: 12px 14px; margin-top: 10px; border-left: 4px solid; }
+  .item .t { font-weight: 650; }
+  .item .e { font-size: .85rem; color: var(--muted); margin-top: 6px; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .fail { background: var(--fail-bg); border-color: var(--fail); } .fail .t::before { content: "✖ "; color: var(--fail); }
+  .warn { background: var(--warn-bg); border-color: var(--warn); } .warn .t::before { content: "! "; color: var(--warn); }
+  .pass { background: var(--pass-bg); border-color: var(--pass); } .pass .t::before { content: "✓ "; color: var(--pass); }
+  .info { background: var(--info-bg); border-color: var(--info); } .info .t::before { content: "i "; color: var(--info); }
+  ul { padding-left: 20px; margin: 0 0 12px; }
+  footer { margin-top: 48px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Will Claude, Cursor and ChatGPT connect to your MCP server?</h1>
+  <p class="lead">A free check of your own MCP server, done the way these clients connect: protocol version, OAuth sign-in and tool definitions. Results in plain language, in a few seconds.</p>
+
+  <form id="checkForm" class="panel">
+    <label for="url">Your MCP server URL</label>
+    <input id="url" type="url" required placeholder="https://mcp.yourcompany.com/mcp" autocomplete="off">
+    <label class="check"><input id="owner" type="checkbox" required> I own or operate this server, or I have permission to test it.</label>
+    <button id="go" type="submit">Check my server</button>
+    <p class="small" style="margin-top:12px">Only the standard connection handshake is used. No tools are called, no data is changed, and no credentials are sent.</p>
+    <p id="err" class="error" hidden></p>
+  </form>
+
+  <section id="result" hidden>
+    <h2>Result</h2>
+    <div class="panel">
+      <div id="verdict" class="verdict"></div>
+      <div id="meta" class="meta"></div>
+      <div id="items"></div>
+    </div>
+  </section>
+
+  <section id="fix" hidden>
+    <h2>Want these fixed?</h2>
+    <p>I fix MCP servers for a fixed price, agreed before any work starts: spec upgrades, OAuth sign-in for Claude and ChatGPT connectors, broken tools, SDK migrations. Payment is 50% to start and 50% on delivery.</p>
+    <form class="panel" name="fix-request" method="POST" data-netlify="true" netlify-honeypot="company_website" action="/thanks.html">
+      <input type="hidden" name="form-name" value="fix-request">
+      <p hidden><label>Leave empty <input name="company_website"></label></p>
+      <input type="hidden" name="server_url" id="f_url">
+      <input type="hidden" name="result_summary" id="f_summary">
+      <label for="f_name">Name</label>
+      <input id="f_name" name="name" type="text" required>
+      <label for="f_email" style="margin-top:12px">Work email</label>
+      <input id="f_email" name="email" type="email" required>
+      <label for="f_msg" style="margin-top:12px">Anything else I should know? (optional)</label>
+      <textarea id="f_msg" name="message"></textarea>
+      <button type="submit" style="margin-top:14px">Send me a fixed-price quote</button>
+    </form>
+  </section>
+
+  <h2>What gets checked</h2>
+  <ul>
+    <li><strong>Current spec (2026-07-28):</strong> whether clients that open with the new handshake can connect directly.</li>
+    <li><strong>Protocol negotiation:</strong> the version your server agrees on and whether it handles newer clients.</li>
+    <li><strong>OAuth sign-in:</strong> the discovery documents Claude.ai, ChatGPT and Cursor read, including the server-URL mismatch that makes Cursor refuse to log in, PKCE, and self-registration.</li>
+    <li><strong>Tools:</strong> valid JSON Schemas, names and duplicates, the things that make clients drop tools or the whole server.</li>
+    <li><strong>Sessions:</strong> servers that reject their own session (common behind load balancers).</li>
+  </ul>
+
+  <footer>
+    Built by Franckelson, MCP server developer · <a href="https://github.com/franckyo">github.com/franckyo</a> ·
+    open-source MCP servers: <a href="https://www.npmjs.com/package/evm-recon-mcp">evm-recon-mcp</a>, <a href="https://www.npmjs.com/package/franckelson-mcp">franckelson-mcp</a>
+  </footer>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+$("checkForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("err").hidden = true; $("go").disabled = true; $("go").textContent = "Checking…";
+  try {
+    const res = await fetch("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: $("url").value.trim(), owner: $("owner").checked }) });
+    const r = await res.json();
+    if (!res.ok || r.error) throw new Error(r.error || "The check failed. Try again.");
+    $("verdict").textContent = r.verdict;
+    const bits = [r.url];
+    if (r.serverInfo) bits.push(`${r.serverInfo.name || ""} ${r.serverInfo.version || ""}`.trim());
+    if (r.negotiatedVersion) bits.push(`protocol ${r.negotiatedVersion}`);
+    if (r.toolCount != null) bits.push(`${r.toolCount} tools`);
+    $("meta").textContent = bits.join(" · ");
+    const order = { fail: 0, warn: 1, info: 2, pass: 3 };
+    $("items").innerHTML = [...r.items].sort((a, b) => order[a.level] - order[b.level]).map((i) =>
+      `<div class="item ${esc(i.level)}"><div class="t">${esc(i.title)}</div><div>${esc(i.impact)}</div>${i.evidence ? `<div class="e">${esc(i.evidence)}</div>` : ""}</div>`).join("");
+    $("result").hidden = false;
+    const needsWork = r.summary.fail + r.summary.warn > 0;
+    $("fix").hidden = !needsWork;
+    $("f_url").value = r.url;
+    $("f_summary").value = `${r.verdict} | ${r.items.filter((i) => i.level === "fail" || i.level === "warn").map((i) => i.id).join(", ")}`;
+    $("result").scrollIntoView({ behavior: "smooth" });
+  } catch (e) {
+    $("err").textContent = e.message; $("err").hidden = false;
+  } finally {
+    $("go").disabled = false; $("go").textContent = "Check my server";
+  }
+});
+</script>
+</body>
+</html>
