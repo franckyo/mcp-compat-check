@@ -17,5 +17,9 @@ What it checks:
 What it never does: call tools, send credentials, change data, follow redirects, or connect to private/internal
 addresses (every DNS answer is checked at connect time).
 
-Web version: `public/` + `netlify/functions/check.js` (Netlify). Requires the "I own or operate this server" confirmation;
-rate-limited per IP. Local test: `node test/local-server.js` → http://localhost:8788
+Add `--json` for machine-readable output (useful in CI). Requires Node.js 20+. Run it only on servers you own or operate.
+
+Page: https://franckyo.github.io/mcp-compat-check/
+
+**Want the problems fixed?** I fix MCP servers for a fixed price agreed up front (spec upgrades, OAuth for Claude/ChatGPT
+connectors, broken tools, SDK migrations): franckelsond@gmail.com

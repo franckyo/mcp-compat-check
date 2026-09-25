@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP Compatibility Check</title>
+<meta name="description" content="Free CLI: will Claude, Cursor and ChatGPT connect to your MCP server? Protocol version, OAuth sign-in and tool schemas, explained in plain language.">
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #e3e3de; --code-bg: #1d1d1b; --code-text: #ededea;
+    --accent: #1f5fd6; --accent-text: #ffffff; --fail: #b3261e; --warn: #9a6700; --pass: #1a7f37;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --panel: #1e1e1c; --text: #ededea; --muted: #a8a8a2; --line: #33332f; --code-bg: #0d0d0c; --code-text: #ededea;
+      --accent: #6b9bff; --accent-text: #0d0d0c; --fail: #ff8a80; --warn: #f2c14e; --pass: #6fd08c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141413; --panel: #1e1e1c; --text: #ededea; --muted: #a8a8a2; --line: #33332f; --code-bg: #0d0d0c; --code-text: #ededea;
+    --accent: #6b9bff; --accent-text: #0d0d0c; --fail: #ff8a80; --warn: #f2c14e; --pass: #6fd08c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.25rem; margin: 36px 0 12px; }
+  p { margin: 0 0 12px; }
+  .lead { color: var(--muted); font-size: 1.08rem; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 20px; }
+  .cmd { display: flex; gap: 10px; align-items: center; background: var(--code-bg); color: var(--code-text); border-radius: 10px; padding: 12px 14px; margin-top: 20px; }
+  .cmd code { flex: 1; overflow-x: auto; white-space: nowrap; font: .95rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+  button, .btn { background: var(--accent); color: var(--accent-text); border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+  pre { background: var(--code-bg); color: var(--code-text); border-radius: 10px; padding: 14px; overflow-x: auto; font: .82rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0; }
+  .f { color: #ff8a80; } .w { color: #f2c14e; } .p { color: #6fd08c; } .m { color: #a8a8a2; }
+  .small { font-size: .9rem; color: var(--muted); }
+  ul { padding-left: 20px; margin: 0 0 12px; }
+  li { margin-bottom: 6px; }
+  footer { margin-top: 48px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); padding-top: 16px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Will Claude, Cursor and ChatGPT connect to your MCP server?</h1>
+  <p class="lead">A free, open-source check of your own MCP server, done the way these clients connect: protocol version, OAuth sign-in and tool definitions. Results in plain language, in a few seconds.</p>
+
+  <div class="cmd"><code id="cmd">npx mcp-compat-check https://mcp.yourcompany.com/mcp</code><button id="copy" type="button">Copy</button></div>
+  <p class="small" style="margin-top:10px">Needs Node.js 20 or newer. Add <code>--json</code> for machine-readable output (handy in CI). Source: <a href="https://github.com/franckyo/mcp-compat-check">github.com/franckyo/mcp-compat-check</a> (MIT).</p>
+
+  <h2>Example output</h2>
+<pre><span class="m">https://mcp.example.com/mcp</span>
+Problems found that stop clients from working  (1 problems, 1 risks, 2 passed)
+
+ <span class="m">i The server requires sign-in</span>
+
+ <span class="p">✓ 401 includes a WWW-Authenticate challenge</span>
+   Clients know how to start signing in.
+
+ <span class="f">✖ OAuth metadata names a different server</span>
+   Clients such as Cursor reject the sign-in because the metadata
+   says the server is "http://internal-host:8080/mcp", not
+   https://mcp.example.com/mcp. Often a wrong public-URL setting
+   behind a proxy or custom domain.
+
+ <span class="p">✓ PKCE (S256) supported</span>
+   Clients can complete the secure sign-in flow.
+
+ <span class="w">! Only Dynamic Client Registration supported</span>
+   Works today. The 2026-07-28 spec prefers Client ID Metadata
+   Documents and deprecates DCR, and fixed redirect-URI allowlists
+   on DCR are a common reason new clients get blocked.</pre>
+  <p class="small" style="margin-top:8px">Real output for an example server with a common proxy misconfiguration (evidence lines trimmed).</p>
+
+  <h2>What gets checked</h2>
+  <ul>
+    <li><strong>Current spec (2026-07-28):</strong> whether clients that open with the new handshake can connect directly.</li>
+    <li><strong>Protocol negotiation:</strong> the version your server agrees on and whether it handles newer clients.</li>
+    <li><strong>OAuth sign-in:</strong> the discovery documents Claude.ai, ChatGPT and Cursor read, including the server-URL mismatch that makes Cursor refuse to log in, PKCE, and self-registration.</li>
+    <li><strong>Tools:</strong> valid JSON Schemas, names and duplicates, the things that make clients drop tools or the whole server.</li>
+    <li><strong>Sessions:</strong> servers that reject their own session (common behind load balancers).</li>
+  </ul>
+
+  <h2>What it never does</h2>
+  <p>It never calls tools, sends credentials, changes data or follows redirects, and it never connects to private or internal addresses (every DNS answer is checked at connect time). Only the standard client handshake is used. Run it on servers you own or operate.</p>
+
+  <div class="panel">
+    <h2 style="margin-top:0">Want these fixed?</h2>
+    <p>I fix MCP servers for a fixed price, agreed before any work starts: spec upgrades, OAuth sign-in for Claude and ChatGPT connectors, broken tools, SDK migrations. Payment is 50% to start and 50% on delivery.</p>
+    <p>Email me your server URL and the check's output, and I'll reply within one business day with a quote.</p>
+    <a class="btn" href="mailto:franckelsond@gmail.com?subject=MCP%20compatibility%20fix%20quote">Email me for a quote</a>
+  </div>
+
+  <footer>
+    Built by Franckelson, MCP server developer · <a href="https://github.com/franckyo">github.com/franckyo</a> ·
+    open-source MCP servers: <a href="https://www.npmjs.com/package/evm-recon-mcp">evm-recon-mcp</a>, <a href="https://www.npmjs.com/package/franckelson-mcp">franckelson-mcp</a>
+  </footer>
+</main>
+<script>
+document.getElementById("copy").addEventListener("click", async (e) => {
+  try { await navigator.clipboard.writeText(document.getElementById("cmd").textContent); e.target.textContent = "Copied"; }
+  catch { e.target.textContent = "Select and copy"; }
+  setTimeout(() => { e.target.textContent = "Copy"; }, 1500);
+});
+</script>
+</body>
+</html>
