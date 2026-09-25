@@ -22,7 +22,8 @@ export function isBlockedAddress(ip) {
   if (net.isIPv4(ip)) return blockedV4(ip);
   const v = ip.toLowerCase();
   if (v.startsWith("::ffff:")) return blockedV4(v.slice(7));
-  return v === "::" || v === "::1" || v.startsWith("fc") || v.startsWith("fd") ||
+  // 64:ff9b:: (NAT64) and 2002:: (6to4) can embed any IPv4 address, private ones included
+  return v === "::" || v === "::1" || v.startsWith("64:ff9b:") || v.startsWith("2002:") || v.startsWith("fc") || v.startsWith("fd") ||
     v.startsWith("fe8") || v.startsWith("fe9") || v.startsWith("fea") || v.startsWith("feb") || v.startsWith("ff");
 }
 
@@ -50,7 +51,10 @@ export function validateUrl(raw) {
 export function request(url, { method = "GET", headers = {}, body, wantId, timeoutMs = 15000 } = {}) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const req = https.request(url, { method, headers: { "User-Agent": UA, ...headers }, lookup: safeLookup, timeout: timeoutMs }, (res) => {
+    let req;
+    try { if (new URL(url).protocol !== "https:") throw new Error("not an https:// URL"); }
+    catch (e) { return resolve({ error: "connect", detail: e.message, ms: 0 }); }
+    req = https.request(url, { method, headers: { "User-Agent": UA, ...headers }, lookup: safeLookup, timeout: timeoutMs }, (res) => {
       const ctype = String(res.headers["content-type"] || "").toLowerCase();
       let buf = "", bytes = 0, done = false;
       const finish = (extra = {}) => {

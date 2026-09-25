@@ -7,6 +7,9 @@
     "mcp-compat-check": "src/cli.js"
   },
   "main": "src/check.js",
+  "files": [
+    "src"
+  ],
   "engines": {
     "node": ">=20"
   },

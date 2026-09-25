@@ -67,7 +67,9 @@ async function oauth(url, wwwAuth, out) {
     ok ? "Clients accept the sign-in metadata." : `Clients such as Cursor reject the sign-in because the metadata says the server is "${resource}", not ${url}. Often a wrong public-URL setting behind a proxy or custom domain.`, `${prmUrl} -> resource: ${resource}`));
   const iss = (prm.authorization_servers || [])[0];
   if (!iss) { out.push(item("fail", "AUTH_NO_AS", "No authorization server listed", "Clients don't know where users should sign in.", prmUrl)); return; }
-  const iu = new URL(iss);
+  let iu;
+  try { iu = new URL(iss); if (iu.protocol !== "https:") throw 0; }
+  catch { out.push(item("fail", "AUTH_BAD_AS", "The login server address is not a valid https URL", "Clients refuse to sign in against it.", iss)); return; }
   const ip = iu.pathname.replace(/\/$/, "");
   let as = null, asUrl = null;
   for (const a of [...new Set([`${iu.origin}/.well-known/oauth-authorization-server${ip}`, `${iu.origin}/.well-known/openid-configuration${ip}`, `${iss.replace(/\/$/, "")}/.well-known/openid-configuration`])]) {
