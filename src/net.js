@@ -7,7 +7,7 @@ import https from "node:https";
 import dns from "node:dns";
 import net from "node:net";
 
-export const UA = "mcp-compat-check/0.1 (+https://github.com/franckyo)";
+export const UA = "mcp-compat-check/0.1 (+https://github.com/franckyo/mcp-compat-check)";
 const MAX_BYTES = 2_000_000;
 
 function blockedV4(ip) {

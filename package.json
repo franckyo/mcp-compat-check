@@ -2,6 +2,15 @@
   "name": "mcp-compat-check",
   "version": "0.1.0",
   "description": "Check your own MCP server the way Claude, Cursor and ChatGPT connect to it: protocol version, OAuth discovery, tool schemas.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "oauth",
+    "compatibility",
+    "checker",
+    "cli"
+  ],
   "type": "module",
   "bin": {
     "mcp-compat-check": "src/cli.js"
@@ -15,6 +24,14 @@
   },
   "license": "MIT",
   "author": "Franckelson",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franckyo/mcp-compat-check.git"
+  },
+  "homepage": "https://github.com/franckyo/mcp-compat-check#readme",
+  "bugs": {
+    "url": "https://github.com/franckyo/mcp-compat-check/issues"
+  },
   "dependencies": {
     "ajv": "^8.20.0"
   }
