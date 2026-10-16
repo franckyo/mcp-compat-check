@@ -23,3 +23,7 @@ Page: https://franckyo.github.io/mcp-compat-check/
 
 **Want the problems fixed?** I fix MCP servers for a fixed price agreed up front (spec upgrades, OAuth for Claude/ChatGPT
 connectors, broken tools, SDK migrations): hello@oarkit.com
+
+---
+
+Built by [Oarkit](https://oarkit.com/): small software, Google Sheets add-ons and MCP servers for small teams. Need an MCP server built, fixed or upgraded? [oarkit.com](https://oarkit.com/#services) · hello@oarkit.com
