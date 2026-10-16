@@ -37,6 +37,21 @@ function safeLookup(hostname, options, cb) {
   });
 }
 
+// Resolve the hostname once, up front, with its own (longer) timeout, so a name that does not exist
+// is reported as a DNS problem rather than as a request timeout on slow resolvers.
+export function preflightDns(hostname, timeoutMs = 25000) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve({ error: "timeout", detail: `DNS lookup for ${hostname} took over ${timeoutMs / 1000}s` }), timeoutMs);
+    safeLookup(hostname, { all: true }, (err) => {
+      clearTimeout(timer);
+      if (!err) return resolve(null);
+      if (err.code === "EBLOCKED") return resolve({ error: "blocked", detail: err.message });
+      if (["ENOTFOUND", "EAI_AGAIN", "ENODATA", "EAI_NONAME"].includes(err.code)) return resolve({ error: "dns", detail: `${hostname}: ${err.code}` });
+      resolve({ error: "connect", detail: `${err.code || ""} ${err.message}`.trim() });
+    });
+  });
+}
+
 export function validateUrl(raw) {
   let u;
   try { u = new URL(raw); } catch { throw new Error("Not a valid URL"); }

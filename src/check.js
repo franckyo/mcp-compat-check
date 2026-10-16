@@ -2,7 +2,7 @@
 // Workflow: server/discover (spec 2026-07-28) -> legacy initialize fallback -> tools/list; on 401, the public
 // OAuth discovery documents every client reads. Never calls tools. Never sends credentials.
 import Ajv2020 from "ajv/dist/2020.js";
-import { request, jsonBody, validateUrl } from "./net.js";
+import { request, jsonBody, validateUrl, preflightDns } from "./net.js";
 
 const NEW = "2026-07-28";
 const LEGACY = ["2025-11-25", "2025-06-18", "2025-03-26"];
@@ -109,9 +109,15 @@ function checkTools(tools, negotiated, out) {
 }
 
 export async function checkServer(rawUrl) {
-  const url = validateUrl(rawUrl).toString();
+  const parsed = validateUrl(rawUrl);
+  const url = parsed.toString();
   const out = [];
   const t0 = Date.now();
+  const pre = await preflightDns(parsed.hostname);
+  if (pre) {
+    out.push(networkFailure(pre));
+    return finish({ url, checkedAt: new Date().toISOString(), negotiatedVersion: null, serverInfo: null, toolCount: null, items: out }, t0);
+  }
   const meta = { "io.modelcontextprotocol/protocolVersion": NEW, "io.modelcontextprotocol/clientInfo": CLIENT, "io.modelcontextprotocol/clientCapabilities": {} };
   const d = await rpc(url, "server/discover", { _meta: meta }, { id: 1, proto: NEW });
   const result = { url, checkedAt: new Date().toISOString(), negotiatedVersion: null, serverInfo: null, toolCount: null, items: out };

@@ -17,9 +17,9 @@ What it checks:
 What it never does: call tools, send credentials, change data, follow redirects, or connect to private/internal
 addresses (every DNS answer is checked at connect time).
 
-Add `--json` for machine-readable output (useful in CI). Requires Node.js 20+. Run it only on servers you own or operate.
+Add `--json` for machine-readable output (useful in CI). Exit codes: `0` no problems, `1` problems found, `2` could not check. Requires Node.js 20+. Run it only on servers you own or operate.
 
 Page: https://franckyo.github.io/mcp-compat-check/
 
 **Want the problems fixed?** I fix MCP servers for a fixed price agreed up front (spec upgrades, OAuth for Claude/ChatGPT
-connectors, broken tools, SDK migrations): franckelsond@gmail.com
+connectors, broken tools, SDK migrations): hello@oarkit.com
